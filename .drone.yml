@@ -1,0 +1,232 @@
+kind: pipeline
+name: Maven Build
+type: docker
+
+steps:
+
+  - name: release-plugin-prepare
+    image: maven:3.8.4-openjdk-11
+    environment:
+      MAVEN_OPTS: "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"
+      DRONE_DEBUG: true
+      GIT_USERNAME:
+        from_secret: git_username
+      PAT_TOKEN:
+        from_secret: pat_token
+      NEXUS_USERNAME:
+        from_secret: nexus_username
+      NEXUS_PASSWORD:
+        from_secret: nexus_password
+      GIT_EMAIL:
+        from_secret: git_email
+      SCM_URL:
+        from_secret: scm_url
+      SCM_CONNECTION:
+        from_secret: scm_connection
+      SCM_DEV_CONNECTION:
+        from_secret: scm_dev_connection
+    commands:
+      - apt-get update && apt-get install -y git
+      - git config --global user.email "$GIT_EMAIL"
+      - git config --global user.name "$GIT_USERNAME"
+      - printenv
+      - mvn release:prepare --batch-mode -Dgit.token=$PAT_TOKEN -Dgit.username=$GIT_USERNAME -Dgit.scm.url=$SCM_URL -Dgit.scm.connection=$SCM_CONNECTION -Dgit.scm.developerConnection=$SCM_DEV_CONNECTION -DautoVersionSubmodules=true -X
+      - |
+        cat > $GITHUB_WORKSPACE/settings.xml <<EOL
+        <settings>
+        <servers>
+        <server>
+        <id>nexus</id>
+        <username>$NEXUS_USERNAME</username>
+        <password>$NEXUS_PASSWORD</password>
+        </server>
+        </servers>
+        </settings>
+        EOL
+      - mvn release:perform -s $GITHUB_WORKSPACE/settings.xml -Dgit.token=$PAT_TOKEN -Dgit.username=$GIT_USERNAME -Dgit.scm.url=$SCM_URL -Dgit.scm.connection=$SCM_CONNECTION -Dgit.scm.developerConnection=$SCM_DEV_CONNECTION -Dmaven.wagon.http.ssl.insecure=true -DautoVersionSubmodules=true -X
+
+    when:
+      branch:
+        - master
+      event:
+        - push
+      ref:
+        - refs/heads/master
+        - refs/tags/*
+
+  - name: update-release-notes
+    image: alpine
+    environment:
+      DRONE_DEBUG: true
+    commands:
+      - apk add --no-cache jq git
+      - set -x
+      - |
+        START_COMMIT="0.0.0"
+        END_COMMIT="HEAD"
+        if ! git show $START_COMMIT &> /dev/null; then
+            START_COMMIT="$(git rev-list --max-parents=0 HEAD)"
+        fi
+        
+        commit_list=$(git log --pretty=format:'%s' $START_COMMIT..$END_COMMIT)
+        echo "Список коммитов:"
+        echo "$commit_list"
+        
+        if [ -z "$commit_list" ]; then
+            echo "Нет коммитов в выбранном диапазоне."
+            exit 0
+        fi
+        
+        commit_list=$(git log --pretty=format:'%s' $START_COMMIT..$END_COMMIT)
+        release_notes=$(echo "$commit_list" | grep -vE "^(Merge|Revert|fixup!|squash!|docs\:|style\:|chore\:|build\:|test\:)")
+        release_notes=$(echo "$release_notes" | awk '!seen[$0]++')
+        echo "$release_notes" > release_notes.txt
+        
+        echo "Файл release_notes.txt создан."
+
+    when:
+      branch:
+        - release-*
+
+  - name: push-src-to-git.cifro.tech
+    image: alpine:3.12
+    environment:
+      DRONE_DEBUG: true
+      GITLAB_PAT_TOKEN:
+        from_secret: gitlab_pat_token
+    commands:
+      - set -x
+      - apk add --no-cache git rsync
+      - git config --global user.name "SEP CI"
+      - git config --global user.email "sep_user@cifro.tech"
+      - echo "$GITLAB_PAT_TOKEN"
+      - git clone https://x-access-token:$GITLAB_PAT_TOKEN@git.cifro.tech/sep/lib/common-starter.lib.git repo
+      - cd repo
+      - echo "Создаем новую ветку"
+      - NEW_BRANCH_NAME=$(echo ${DRONE_SOURCE_BRANCH} | sed 's/^release-//')
+      - git checkout -b $NEW_BRANCH_NAME
+      - echo "Копируем содержимое, исключая папку repo"
+      - rsync -av --exclude='repo' ../* .
+      - echo "Добавляем изменения"
+      - git add .
+      - git commit -m "Релиз версии $NEW_BRANCH_NAME"
+      - echo "Пушим новую ветку на удаленный репозиторий"
+      - git push https://x-access-token:$GITLAB_PAT_TOKEN@git.cifro.tech/sep/lib/common-starter.lib.git $NEW_BRANCH_NAME
+      - cd ..
+      - rm -rf repo
+    depends_on:
+      - update-release-notes
+    when:
+      branch:
+        - release-*
+
+  - name: prerelease-push-src-to-git.cifro.tech
+    image: alpine:3.12
+    environment:
+      DRONE_DEBUG: true
+      GITLAB_PAT_TOKEN:
+        from_secret: gitlab_pat_token
+    commands:
+      - set -x
+      - apk add --no-cache git rsync
+      - git config --global user.name "SEP CI"
+      - git config --global user.email "sep_user@cifro.tech"
+      - echo "$GITLAB_PAT_TOKEN"
+      - git clone https://x-access-token:$GITLAB_PAT_TOKEN@git.cifro.tech/sep/lib/common-starter.lib.git repo
+      - cd repo
+      - echo "Создаем новую ветку"
+      - VERSION=$(echo ${DRONE_SOURCE_BRANCH} | sed 's/^prerelease-//')
+      - git checkout -B $DRONE_SOURCE_BRANCH
+      - echo "Копируем содержимое, исключая папку repo"
+      - rsync -av --exclude='repo' ../* .
+      - echo "Добавляем изменения"
+      - git add .
+      - git commit -m "Пререлиз версии $VERSION"
+      - echo "Пушим новую ветку на удаленный репозиторий"
+      - git push https://x-access-token:$GITLAB_PAT_TOKEN@git.cifro.tech/sep/lib/common-starter.lib.git $DRONE_SOURCE_BRANCH
+      - cd ..
+      - rm -rf repo
+    when:
+      branch:
+        - prerelease-*
+
+  - name: notify-deploy-success
+    image: appleboy/drone-telegram
+    settings:
+      token:
+        from_secret: telegram_bot_token
+      to:
+        from_secret: telegram_chat_id
+      message: |
+        🚀 Деплой успешно отправлен!
+        Сборка #{{build.number}}
+        Репозиторий: {{repo.name}}
+        Ветка: {{commit.branch}}
+        Подробнее: [Ссылка на сборку]({{build.link}})
+    when:
+      status: [ success ]
+    depends_on:
+      - release-plugin-prepare
+
+  - name: notify-deploy-failure
+    image: appleboy/drone-telegram
+    settings:
+      token:
+        from_secret: telegram_bot_token
+      to:
+        from_secret: telegram_chat_id
+      message: |
+        ❌ Деплой не отправлен!
+        Сборка #{{build.number}}
+        Репозиторий: {{repo.name}}
+        Ветка: {{commit.branch}}
+        Подробнее: [Ссылка на сборку]({{build.link}})
+    when:
+      status: [ failure ]
+    depends_on:
+      - release-plugin-prepare
+
+  - name: notify-build-status
+    image: appleboy/drone-telegram
+    settings:
+      token:
+        from_secret: telegram_bot_token
+      to:
+        from_secret: telegram_chat_id
+      message: |
+        {{#eq build.status "success"}}📣 Сборка #{{build.number}} завершилась со статусом: {{build.status}}!{{/eq}}
+        {{#eq build.status "failure"}}🧱 Сборка #{{build.number}} завершилась со статусом: {{build.status}}!{{/eq}}
+        Репозиторий: {{repo.name}}
+        Ветка: {{commit.branch}}
+        Автор: {{commit.author}}
+        Сообщение: {{commit.message}}
+        Подробнее: [Ссылка на сборку]({{build.link}})
+    when:
+      status: [ success, failure ]
+    depends_on:
+      - notify-deploy-success
+      - notify-deploy-failure
+
+
+image_pull_secrets:
+  - dockerconfig
+
+node:
+  node: 149.154.64.5
+
+trigger:
+  event:
+    include:
+      - push
+      - pull_request
+      - rollback
+
+
+volumes:
+  - name: dockersock
+    host:
+      path: /var/run/docker.sock
+  - name: cache
+    host:
+      path: /tmp/.buildx-cache
+

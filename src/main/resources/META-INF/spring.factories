@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+  su.opencode.digsigcik.common.ErrorHandlerAutoConfiguration
