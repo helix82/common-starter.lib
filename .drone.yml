@@ -229,4 +229,3 @@ volumes:
   - name: cache
     host:
       path: /tmp/.buildx-cache
-
