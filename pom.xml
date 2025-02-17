@@ -11,7 +11,7 @@
 
     <groupId>su.opencode.digsigcik</groupId>
     <artifactId>common-starter</artifactId>
-    <version>1.2.1</version>
+    <version>1.2.2-SNAPSHOT</version>
 
     <name>Common Starter</name>
     <description>Custom Spring starter with common configuration</description>
@@ -67,7 +67,7 @@
         <url>${git.scm.url}</url>
         <connection>${git.scm.connection}</connection>
         <developerConnection>${git.scm.developerConnection}</developerConnection>
-        <tag>common-starter-1.2.1</tag>
+        <tag>HEAD</tag>
     </scm>
 
 
