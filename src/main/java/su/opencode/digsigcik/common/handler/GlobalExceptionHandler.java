@@ -18,7 +18,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleException(Exception ex, WebRequest request) {
-        log.error("Internal error: " + ex);
+        logError(ex, request);
+
         return buildErrorResponse(
                 "Внутренняя ошибка сервера.",
                 request,
@@ -29,7 +30,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BadRequestException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleBadRequestException(BadRequestException ex, WebRequest request) {
-        log.error("BadRequestException error: " + ex.getMessage());
+        logError(ex, request);
+
         return buildErrorResponse(
                 ex.getMessage(),
                 request,
@@ -39,7 +41,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BaseException.class)
     public ResponseEntity<ErrorResponse> handleBaseException(BaseException ex, WebRequest request) {
-        log.error("BaseException error: " + ex.getMessage());
+        logError(ex, request);
+
         ErrorResponse response = buildErrorResponse(
                 ex.getMessage(),
                 request,
@@ -47,6 +50,17 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(ex.getStatus()).body(response);
+    }
+
+    private void logError(Exception ex, WebRequest request) {
+        StackTraceElement element = ex.getStackTrace()[0];
+        log.error("[{}] Ошибка в {}.{}(), строка: {}, запрос: {}, сообщение: {}",
+                ex.getClass().getSimpleName(),
+                element.getClassName(),
+                element.getMethodName(),
+                element.getLineNumber(),
+                request.getDescription(false),
+                ex.getMessage(), ex);
     }
 
     private ErrorResponse buildErrorResponse(String message, WebRequest request, String code) {
