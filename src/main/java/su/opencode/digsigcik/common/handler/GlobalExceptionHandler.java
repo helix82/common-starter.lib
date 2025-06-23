@@ -15,6 +15,7 @@ import org.springframework.web.context.request.WebRequest;
 import su.opencode.digsigcik.common.exception.ErrorResponse;
 import su.opencode.digsigcik.common.exception.custom.BadRequestException;
 import su.opencode.digsigcik.common.exception.custom.BaseException;
+import su.opencode.digsigcik.common.exception.custom.NotFoundException;
 
 @Log4j2
 @RestControllerAdvice
@@ -47,6 +48,24 @@ public class GlobalExceptionHandler {
     })
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ErrorResponse> handleBadRequestException(BadRequestException ex, WebRequest request) {
+        logError(ex, request);
+        ErrorResponse errorResponse = buildErrorResponse(
+                ex.getMessage(),
+                request,
+                ex.getCode()
+        );
+        return ResponseEntity.status(ex.getStatus())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(errorResponse);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "400", description = "Некорректный запрос",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFoundException(NotFoundException ex, WebRequest request) {
         logError(ex, request);
         ErrorResponse errorResponse = buildErrorResponse(
                 ex.getMessage(),
