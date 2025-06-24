@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -104,6 +105,24 @@ public class GlobalExceptionHandler {
     })
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<?> handleNoSuchElementException(NoSuchElementException ex, WebRequest request) {
+        logError(ex, request);
+        ErrorResponse errorResponse = buildErrorResponse(
+                ex.getMessage(),
+                request,
+                "CODE_400"
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(errorResponse);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "400", description = "Некорректный запрос",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<?> handleDataIntegrityViolationException(DataIntegrityViolationException ex, WebRequest request) {
         logError(ex, request);
         ErrorResponse errorResponse = buildErrorResponse(
                 ex.getMessage(),
