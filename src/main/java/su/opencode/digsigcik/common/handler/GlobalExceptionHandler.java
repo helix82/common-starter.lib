@@ -17,6 +17,8 @@ import su.opencode.digsigcik.common.exception.custom.BadRequestException;
 import su.opencode.digsigcik.common.exception.custom.BaseException;
 import su.opencode.digsigcik.common.exception.custom.NotFoundException;
 
+import java.util.NoSuchElementException;
+
 @Log4j2
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -73,6 +75,42 @@ public class GlobalExceptionHandler {
                 ex.getCode()
         );
         return ResponseEntity.status(ex.getStatus())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(errorResponse);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "400", description = "Некорректный запрос",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<?> handleIllegalArgumentException(IllegalArgumentException ex, WebRequest request) {
+        logError(ex, request);
+        ErrorResponse errorResponse = buildErrorResponse(
+                ex.getMessage(),
+                request,
+                "CODE_400"
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(errorResponse);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "400", description = "Некорректный запрос",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @ExceptionHandler(NoSuchElementException.class)
+    public ResponseEntity<?> handleNoSuchElementException(NoSuchElementException ex, WebRequest request) {
+        logError(ex, request);
+        ErrorResponse errorResponse = buildErrorResponse(
+                ex.getMessage(),
+                request,
+                "CODE_400"
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(errorResponse);
     }
