@@ -20,19 +20,35 @@ import su.opencode.digsigcik.common.exception.custom.NotFoundException;
 
 import java.util.NoSuchElementException;
 
+import static su.opencode.digsigcik.common.utils.ExceptionUtils.isEntityNotFound;
+
 @Log4j2
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @Operation(summary = "Обработка неизвестных ошибок", description = "Перехватывает любые неожиданные ошибки и возвращает код ошибки ERROR-005.")
+    @Operation(summary = "Обработка неизвестных ошибок", description = "Перехватывает любые неожиданные ошибки и возвращает код ошибки.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Некорректный запрос",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class)))
     })
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception ex, WebRequest request) {
         logError(ex, request);
+
+        if (isEntityNotFound(ex)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(buildErrorResponse(
+                            ex.getMessage(),
+                            request,
+                            "CODE_400"
+                    ));
+        }
+
         ErrorResponse errorResponse = buildErrorResponse(
                 "Внутренняя ошибка сервера.",
                 request,
