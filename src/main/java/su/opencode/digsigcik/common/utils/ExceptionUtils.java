@@ -17,11 +17,11 @@ public class ExceptionUtils {
             "org.shredzone.acme4j.exception.AcmeNetworkException"
     );
 
-    public boolean isEntityNotFound(Exception ex) {
+    public static boolean isEntityNotFound(Exception ex) {
         return ENTITY_NOT_FOUND_EXCEPTIONS.contains(ex.getClass().getName());
     }
 
-    public boolean isTlsException(Exception ex) {
+    public static boolean isTlsException(Exception ex) {
         return TLS_EXCEPTIONS.contains(ex.getClass().getName());
     }
 }
