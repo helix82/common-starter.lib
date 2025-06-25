@@ -18,9 +18,11 @@ import su.opencode.digsigcik.common.exception.custom.BadRequestException;
 import su.opencode.digsigcik.common.exception.custom.BaseException;
 import su.opencode.digsigcik.common.exception.custom.NotFoundException;
 
+import java.text.ParseException;
 import java.util.NoSuchElementException;
 
 import static su.opencode.digsigcik.common.utils.ExceptionUtils.isEntityNotFound;
+import static su.opencode.digsigcik.common.utils.ExceptionUtils.isTlsException;
 
 @Log4j2
 @RestControllerAdvice
@@ -39,7 +41,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleException(Exception ex, WebRequest request) {
         logError(ex, request);
 
-        if (isEntityNotFound(ex)) {
+        if (isEntityNotFound(ex) || isTlsException(ex)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(buildErrorResponse(
@@ -103,6 +105,24 @@ public class GlobalExceptionHandler {
     })
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<?> handleIllegalArgumentException(IllegalArgumentException ex, WebRequest request) {
+        logError(ex, request);
+        ErrorResponse errorResponse = buildErrorResponse(
+                ex.getMessage(),
+                request,
+                "CODE_400"
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(errorResponse);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "400", description = "Некорректный запрос",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @ExceptionHandler(ParseException.class)
+    public ResponseEntity<?> handleParseException(ParseException ex, WebRequest request) {
         logError(ex, request);
         ErrorResponse errorResponse = buildErrorResponse(
                 ex.getMessage(),
