@@ -1,4 +1,4 @@
-package su.opencode.digsigcik.common.exception.custom;
+package su.opencode.digsigcik.common.exceptions.exception.custom;
 
 import org.springframework.http.HttpStatus;
 

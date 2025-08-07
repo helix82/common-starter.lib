@@ -1,4 +1,4 @@
-package su.opencode.digsigcik.common.exception;
+package su.opencode.digsigcik.common.exceptions.exception;
 
 import lombok.Data;
 

@@ -1,4 +1,4 @@
-package su.opencode.digsigcik.common.handler;
+package su.opencode.digsigcik.common.exceptions.handler;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -13,10 +13,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
-import su.opencode.digsigcik.common.exception.ErrorResponse;
-import su.opencode.digsigcik.common.exception.custom.BadRequestException;
-import su.opencode.digsigcik.common.exception.custom.BaseException;
-import su.opencode.digsigcik.common.exception.custom.NotFoundException;
+import su.opencode.digsigcik.common.exceptions.exception.ErrorResponse;
+import su.opencode.digsigcik.common.exceptions.exception.custom.BadRequestException;
+import su.opencode.digsigcik.common.exceptions.exception.custom.BaseException;
+import su.opencode.digsigcik.common.exceptions.exception.custom.NotFoundException;
 
 import java.text.ParseException;
 import java.util.NoSuchElementException;
