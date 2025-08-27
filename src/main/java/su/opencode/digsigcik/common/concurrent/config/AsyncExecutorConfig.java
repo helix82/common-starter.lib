@@ -1,6 +1,6 @@
 package su.opencode.digsigcik.common.concurrent.config;
 
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
@@ -21,7 +21,7 @@ import su.opencode.digsigcik.common.concurrent.factory.ExecutorCreator;
         name = "enabled-executors",
         havingValue = "true")
 @EnableAsync
-@Log4j2
+@Slf4j
 public class AsyncExecutorConfig implements BeanDefinitionRegistryPostProcessor, EnvironmentAware {
     private Environment environment;
     private static final String ASYNC_PREFIX = "async";

@@ -1,12 +1,12 @@
 package su.opencode.digsigcik.common.concurrent.factory;
 
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import su.opencode.digsigcik.common.concurrent.config.AsyncExecutorProperties;
 import su.opencode.digsigcik.common.utils.CPUUtils;
 
-@Log4j2
+@Slf4j
 public class ExecutorCreator {
     private static final int MAX_POOL_SIZE_MULTIPLIER = 2;
     private static final String THREAD_NAME_PREFIX_FORMAT = "Async-%s-";
