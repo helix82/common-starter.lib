@@ -22,7 +22,20 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <version.lombok>1.18.18</version.lombok>
         <version.springboot>2.7.18</version.springboot>
+        <version.springCloud>2021.0.9</version.springCloud>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${version.springCloud}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -73,6 +86,11 @@
         </dependency>
 
         <!-- /Swagger -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-sleuth</artifactId>
+            <version>3.1.5</version>
+        </dependency>
     </dependencies>
 
 

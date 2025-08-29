@@ -5,7 +5,11 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cloud.sleuth.Span;
+import org.springframework.cloud.sleuth.TraceContext;
+import org.springframework.cloud.sleuth.Tracer;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -20,13 +24,16 @@ import su.opencode.digsigcik.common.exceptions.exception.custom.NotFoundExceptio
 
 import java.text.ParseException;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 import static su.opencode.digsigcik.common.utils.ExceptionUtils.isEntityNotFound;
 import static su.opencode.digsigcik.common.utils.ExceptionUtils.isTlsException;
 
 @Slf4j
+@RequiredArgsConstructor
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private final Tracer tracer;
 
     @Operation(summary = "Обработка неизвестных ошибок", description = "Перехватывает любые неожиданные ошибки и возвращает код ошибки.")
     @ApiResponses(value = {
@@ -197,8 +204,23 @@ public class GlobalExceptionHandler {
                 ex.getMessage(), ex);
     }
 
-    private ErrorResponse buildErrorResponse(String message, WebRequest request, String code) {
+    private ErrorResponse buildErrorResponse(String message,
+                                             WebRequest request,
+                                             String code) {
+        Span currentSpan = tracer.currentSpan();
+
+        String traceId = Optional.ofNullable(currentSpan)
+                .map(Span::context)
+                .map(TraceContext::traceId)
+                .orElse(null);
+
+        String spanId = Optional.ofNullable(currentSpan)
+                .map(Span::context)
+                .map(TraceContext::spanId)
+                .orElse(null);
+
         String uri = request.getDescription(false);
-        return new ErrorResponse(message, uri, code);
+
+        return new ErrorResponse(message, uri, code, traceId, spanId);
     }
 }
