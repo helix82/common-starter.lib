@@ -14,6 +14,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
@@ -27,6 +28,7 @@ import java.text.ParseException;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
+import static java.util.Objects.nonNull;
 import static su.opencode.digsigcik.common.utils.ExceptionUtils.isEntityNotFound;
 import static su.opencode.digsigcik.common.utils.ExceptionUtils.isTlsException;
 
@@ -193,6 +195,29 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(ex.getStatus())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(response);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "400", description = "Некорректный запрос",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<?> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex, WebRequest request) {
+        logError(ex, request);
+        String message = nonNull(ex.getFieldError())
+                ? ex.getFieldError().getDefaultMessage()
+                : "Validation error";
+
+        ErrorResponse response = buildErrorResponse(
+                message,
+                request,
+                "CODE_400"
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(response);
     }
