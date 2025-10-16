@@ -14,7 +14,8 @@ public class ExceptionUtils {
 
     private static final Set<String> TLS_EXCEPTIONS = Set.of(
             "org.shredzone.acme4j.exception.AcmeException",
-            "org.shredzone.acme4j.exception.AcmeNetworkException"
+            "org.shredzone.acme4j.exception.AcmeNetworkException",
+            "org.shredzone.acme4j.exception.AcmeServerException"
     );
 
     public static boolean isEntityNotFound(Exception ex) {
