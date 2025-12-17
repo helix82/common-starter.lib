@@ -24,6 +24,7 @@ import su.opencode.digsigcik.common.exceptions.exception.custom.BadRequestExcept
 import su.opencode.digsigcik.common.exceptions.exception.custom.BaseException;
 import su.opencode.digsigcik.common.exceptions.exception.custom.NotFoundException;
 
+import java.nio.file.AccessDeniedException;
 import java.text.ParseException;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -234,6 +235,24 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getStatus())
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(response);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "400", description = "Некорректный запрос",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<?> handleAccessDeniedException(AccessDeniedException ex, WebRequest request) {
+        logError(ex, request);
+        ErrorResponse errorResponse = buildErrorResponse(
+                ex.getMessage(),
+                request,
+                "CODE_403"
+        );
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(errorResponse);
     }
 
     private void logError(Exception ex, WebRequest request) {
