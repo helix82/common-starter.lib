@@ -93,9 +93,8 @@
         </dependency>
 
         <dependency>
-            <groupId>su.opencode.digsigcik</groupId>
-            <artifactId>common-security-starter</artifactId>
-            <version>1.3.24</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
     </dependencies>
 
