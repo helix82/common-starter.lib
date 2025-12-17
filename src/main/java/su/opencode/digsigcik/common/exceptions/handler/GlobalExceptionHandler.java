@@ -24,7 +24,7 @@ import su.opencode.digsigcik.common.exceptions.exception.custom.BadRequestExcept
 import su.opencode.digsigcik.common.exceptions.exception.custom.BaseException;
 import su.opencode.digsigcik.common.exceptions.exception.custom.NotFoundException;
 
-import java.nio.file.AccessDeniedException;
+import org.springframework.security.access.AccessDeniedException;
 import java.text.ParseException;
 import java.util.NoSuchElementException;
 import java.util.Optional;
